@@ -17,6 +17,7 @@ Requirements:
 TODO:
     [] Upscale or Downscale only options
     [] Extra Options when saving images, i.e. jpeg quality slider, png transparency, etc.
+    [] Choose where to save new image files.
     [] 
     
 '''
@@ -40,12 +41,29 @@ NONE = -1
 HEIGHT = 0
 WIDTH = 1
 
+# Preset Options
+CHANGE_HEIGHT = 0
+CHANGE_WIDTH = 1
+KEEP_ASPECT_RATIO = 2
+CHANGE_IMAGE_FORMAT = 3
+IMAGE_FORMAT_OPTIONS = 4
+OVERWRITE_IMAGE_FILE = 5
+ADD_TO_FILENAME = 6
+SAVE_FILE_FOLDER = 7
+
+SEARCH_SUB_DIRS = 10
+
+# Preset Modifiers
 NO_CHANGE = 0
 CHANGE_TO = 1
 ADD = 2
 SUBTRACT = 3
 MULTIPLY = 4
 DIVIDE = 5
+UPSCALE = 6
+DOWNSCALE = 7
+
+SAME_DIR = 10
 
 BMP = '.bmp'  # Windows bitmaps: *.bmp
 EXR = '.exr'  # OpenEXR Image files: *.exr
@@ -59,21 +77,28 @@ RAS = '.ras'  # Sun rasters: *.ras, *.sun, *.sr
 TIF = '.tif'  # TIFF files: *.tiff, *.tif
 WEB = '.webp' # WebP: *.webp
 
+QUALITY = 0
+OPTIMIZE = 1
+PROGRESSIVE = 2
+TRANSPARENCY = 3
+
 
 ### After initial drop and file renaming, ask for additional files or just quit the script.
 loop = True
 
 ### Present Options - Used to skip questions and immediately start modifing all drop images.
-use_preset = False
+### Make sure to select the correct preset (select_preset)
+use_preset = True
+select_preset = 3
 
-preset0 = {
-  'HEIGHT'            : (CHANGE_TO,1080),   # (Modify with, Number)     (Default: 0)
-  'WIDTH'             : (NO_CHANGE),        # 0 = NO_CHANGE             (Default: 0)
-  'KEEP_ASPECT_RATIO' : True,               # If Only One Size Changed  (Default: True)
-  'CHANGE_FORMAT'     : PNG,                # Image Format              (Default: 0)
-  'OVERWRITE_IMAGE'   : True,               # If Not CHANGE_FORMAT      (Default: False)
-  'ADD_TO_FILENAME'   : '_[Modified]',      # If OVERWRITE False        (Default: '_new')
-  'SEARCH_SUB_DIRS'   : False               # If Directory Dropped      (Default: False)
+preset0 = { #         : Defualts
+  'HEIGHT'            : (NO_CHANGE),        # (Modify with, Number)
+  'WIDTH'             : (NO_CHANGE),        # 0 = NO_CHANGE
+  'KEEP_ASPECT_RATIO' : True,               # If Only One Size Changed
+  'CHANGE_FORMAT'     : NO_CHANGE,          # Image Format
+  'OVERWRITE_IMAGE'   : False,              # If Not CHANGE_FORMAT
+  'ADD_TO_FILENAME'   : '_new',             # If OVERWRITE False
+  'SEARCH_SUB_DIRS'   : False               # If Directory Dropped
 }
 preset1 = {
   'HEIGHT'            : (CHANGE_TO,1080),
@@ -91,7 +116,7 @@ preset2 = {
   'CHANGE_FORMAT'     : PNG
 }
 preset3 = {
-  'CHANGE_FORMAT'     : PNG,
+  'CHANGE_FORMAT'     : JPG,
   'OVERWRITE_IMAGE'   : False,
   'ADD_TO_FILENAME'   : '_[Modified]',
   'SEARCH_SUB_DIRS'   : False
@@ -102,8 +127,18 @@ preset4 = {
   'KEEP_ASPECT_RATIO' : True,
   'CHANGE_FORMAT'     : PNG
 }
-preset_options = [preset0,preset1,preset2,preset3,preset4]
-preset = preset_options[0] # Pick which preset to use [#].
+preset5 = {
+  CHANGE_HEIGHT         : (DOWNSCALE, 1080),
+  CHANGE_WIDTH          : NO_CHANGE,
+  KEEP_ASPECT_RATIO     : True,
+  CHANGE_IMAGE_FORMAT   : JPG,
+  IMAGE_FORMAT_OPTIONS  : ((QUALITY,100),(OPTIMIZE,True),(PROGRESSIVE,True)),
+  OVERWRITE_IMAGE_FILE  : False,
+  ADD_TO_FILENAME       : '_[Modified]',
+  SAVE_FILE_FOLDER      : SAME_DIR
+}
+preset_options = [preset0,preset1,preset2,preset3,preset4,preset5]
+preset = preset_options[select_preset] # Pick which preset to use [#].
 
 
 ### 
@@ -231,7 +266,11 @@ def modifyImage(file_path, edit_details):
     
     if image_modified:
         new_image_path = PurePath().joinpath(image_path.parent, new_file_name+extension)
-        io.imsave(str(new_image_path), image_resized)
+        # jpg: 
+        if extension == JPG:
+            io.imsave(str(new_image_path), image_resized, quality=100, optimize=True, progressive=True)
+        else:
+            io.imsave(str(new_image_path), image_resized)
     
     return image_modified
 
@@ -441,7 +480,7 @@ if __name__ == '__main__':
     
     # Testing: Simulating File Drops
     ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-    sys.argv.append(os.path.join(ROOT_DIR,'images\\01.jpg'))
+    #sys.argv.append(os.path.join(ROOT_DIR,'images\\01.jpg'))
     #sys.argv.append(os.path.join(ROOT_DIR,'images\\text.txt'))
     #sys.argv.append(os.path.join(ROOT_DIR,'images'))
     
