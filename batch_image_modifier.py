@@ -89,43 +89,43 @@ loop = True
 ### Present Options - Used to skip questions and immediately start modifing all drop images.
 ### Make sure to select the correct preset (select_preset)
 use_preset = True
-select_preset = 3
+select_preset = 5
 
-preset0 = { #         : Defualts
-  'HEIGHT'            : (NO_CHANGE),        # (Modify with, Number)
-  'WIDTH'             : (NO_CHANGE),        # 0 = NO_CHANGE
-  'KEEP_ASPECT_RATIO' : True,               # If Only One Size Changed
-  'CHANGE_FORMAT'     : NO_CHANGE,          # Image Format
-  'OVERWRITE_IMAGE'   : False,              # If Not CHANGE_FORMAT
-  'ADD_TO_FILENAME'   : '_new',             # If OVERWRITE False
-  'SEARCH_SUB_DIRS'   : False               # If Directory Dropped
+preset0 = { #           : Defualts
+  CHANGE_HEIGHT         : (NO_CHANGE),        # (Modify with, Number)
+  CHANGE_WIDTH          : (NO_CHANGE),        # 0 = NO_CHANGE
+  KEEP_ASPECT_RATIO     : True,               # If Only One Size Changed
+  CHANGE_IMAGE_FORMAT   : NO_CHANGE,          # Image Format
+  OVERWRITE_IMAGE_FILE  : False,              # If Not CHANGE_FORMAT
+  ADD_TO_FILENAME       : '_new',             # If OVERWRITE False
+  SAVE_FILE_FOLDER      : False               # If Directory Dropped
 }
 preset1 = {
-  'HEIGHT'            : (CHANGE_TO,1080),
-  'WIDTH'             : NO_CHANGE,
-  'KEEP_ASPECT_RATIO' : True,
-  'CHANGE_FORMAT'     : NO_CHANGE,
-  'OVERWRITE_IMAGE'   : False,
-  'ADD_TO_FILENAME'   : '_[Modified]',
-  'SEARCH_SUB_DIRS'   : False
+  CHANGE_HEIGHT         : (CHANGE_TO,1080),
+  CHANGE_WIDTH          : NO_CHANGE,
+  KEEP_ASPECT_RATIO     : True,
+  CHANGE_IMAGE_FORMAT   : NO_CHANGE,
+  OVERWRITE_IMAGE_FILE  : False,
+  ADD_TO_FILENAME       : '_[Modified]',
+  SAVE_FILE_FOLDER      : False
 }
 preset2 = {
-  'HEIGHT'            : 0,
-  'WIDTH'             : (MULTIPLY,4),
-  'KEEP_ASPECT_RATIO' : True,
-  'CHANGE_FORMAT'     : PNG
+  CHANGE_HEIGHT         : 0,
+  CHANGE_WIDTH          : (MULTIPLY,4),
+  KEEP_ASPECT_RATIO     : True,
+  CHANGE_IMAGE_FORMAT   : PNG
 }
 preset3 = {
-  'CHANGE_FORMAT'     : JPG,
-  'OVERWRITE_IMAGE'   : False,
-  'ADD_TO_FILENAME'   : '_[Modified]',
-  'SEARCH_SUB_DIRS'   : False
+  CHANGE_IMAGE_FORMAT   : JPG,
+  OVERWRITE_IMAGE_FILE  : False,
+  ADD_TO_FILENAME       : '_[Modified]',
+  SAVE_FILE_FOLDER      : False
 }
 preset4 = {
-  'HEIGHT'            : (SUBTRACT,2034),
-  'WIDTH'             : 0,
-  'KEEP_ASPECT_RATIO' : True,
-  'CHANGE_FORMAT'     : PNG
+  CHANGE_HEIGHT         : (SUBTRACT,2034),
+  CHANGE_WIDTH          : 0,
+  KEEP_ASPECT_RATIO     : True,
+  CHANGE_IMAGE_FORMAT   : PNG
 }
 preset5 = {
   CHANGE_HEIGHT         : (DOWNSCALE, 1080),
@@ -244,17 +244,17 @@ def modifyImage(file_path, edit_details):
     else:
         return image_modified
     
-    height_mod = edit_details.get('HEIGHT',(0))
-    width_mod = edit_details.get('WIDTH',(0))
-    keep_aspect_ratio = edit_details.get('KEEP_ASPECT_RATIO',True)
-    if edit_details.get('CHANGE_FORMAT',0) != NO_CHANGE:
-        extension = edit_details['CHANGE_FORMAT']
+    height_mod = edit_details.get(CHANGE_HEIGHT,(0))
+    width_mod = edit_details.get(CHANGE_WIDTH,(0))
+    keep_aspect_ratio = edit_details.get(KEEP_ASPECT_RATIO,True)
+    if edit_details.get(CHANGE_IMAGE_FORMAT,0) != NO_CHANGE:
+        extension = edit_details[CHANGE_IMAGE_FORMAT]
         image_modified = True
     else:
         extension = image_path.suffix
-    overwrite = edit_details.get('OVERWRITE_IMAGE',False)
+    overwrite = edit_details.get(OVERWRITE_IMAGE_FILE,False)
     if not overwrite:
-        new_file_name = image_path.stem + edit_details.get('ADD_TO_FILENAME','_new')
+        new_file_name = image_path.stem + edit_details.get(ADD_TO_FILENAME,'_new')
     else:
         new_file_name = image_path.stem
     
@@ -266,7 +266,7 @@ def modifyImage(file_path, edit_details):
     
     if image_modified:
         new_image_path = PurePath().joinpath(image_path.parent, new_file_name+extension)
-        # jpg: 
+        ## TODO
         if extension == JPG:
             io.imsave(str(new_image_path), image_resized, quality=100, optimize=True, progressive=True)
         else:
@@ -305,6 +305,18 @@ def modifyImageSize(org_image_shape, image_size_modifications, keep_aspect_ratio
         if image_size_modifications[HEIGHT][0] == DIVIDE:
             new_height = org_image_shape[HEIGHT] / image_size_modifications[HEIGHT][1]
         
+        if image_size_modifications[HEIGHT][0] == UPSCALE:
+            if org_image_shape[HEIGHT] < image_size_modifications[HEIGHT][1]:
+                new_height = image_size_modifications[HEIGHT][1]
+            else:
+                new_height = org_image_shape[HEIGHT]
+        
+        if image_size_modifications[HEIGHT][0] == DOWNSCALE:
+            if org_image_shape[HEIGHT] > image_size_modifications[HEIGHT][1]:
+                new_height = image_size_modifications[HEIGHT][1]
+            else:
+                new_height = org_image_shape[HEIGHT]
+    
     elif image_size_modifications[HEIGHT] != NO_CHANGE:
         
         new_height = image_size_modifications[HEIGHT]
@@ -334,6 +346,18 @@ def modifyImageSize(org_image_shape, image_size_modifications, keep_aspect_ratio
         if image_size_modifications[WIDTH][0] == DIVIDE:
             new_width = org_image_shape[WIDTH] / image_size_modifications[WIDTH][1]
         
+        if image_size_modifications[WIDTH][0] == UPSCALE:
+            if org_image_shape[WIDTH] < image_size_modifications[WIDTH][1]:
+                new_height = image_size_modifications[WIDTH][1]
+            else:
+                new_height = org_image_shape[WIDTH]
+        
+        if image_size_modifications[WIDTH][0] == DOWNSCALE:
+            if org_image_shape[WIDTH] > image_size_modifications[WIDTH][1]:
+                new_height = image_size_modifications[WIDTH][1]
+            else:
+                new_height = org_image_shape[WIDTH]
+    
     elif image_size_modifications[WIDTH] != NO_CHANGE:
         
         new_width = image_size_modifications[WIDTH]
@@ -388,7 +412,7 @@ def drop(files):
     # If script is ran on it's own then ask for an image file.
     if len(files) == 0:
         dropped_file = input('No image files or directories found, drop one here now to proceed: ')
-        dropped_file = findReplace(dropped_file,'"','',ALL,LEFT,False)[0] # Remove the auto quotes
+        dropped_file = dropped_file.replace('"','') # Remove the auto quotes
         
         if os.path.exists(dropped_file):
             files.append(dropped_file)
@@ -448,7 +472,7 @@ def drop(files):
                     include_sub_dirs = input('Search through sub-directories too? [ Y / N ]: ')
                     include_sub_dirs = yesTrue(include_sub_dirs)
                 else:
-                    include_sub_dirs = preset[SUB_DIRS]
+                    include_sub_dirs = preset[SEARCH_SUB_DIRS]
                 
                 images_modified = modifyAllImagesInDirectory(file_path, edit_details, include_sub_dirs)
             
@@ -484,7 +508,6 @@ if __name__ == '__main__':
     #sys.argv.append(os.path.join(ROOT_DIR,'images\\text.txt'))
     #sys.argv.append(os.path.join(ROOT_DIR,'images'))
     
-    
     '''from PIL import Image
     pil_image = Image.open(file_path)
     print(pil_image)'''
@@ -515,8 +538,7 @@ if __name__ == '__main__':
         prev_images_modified = 0
         while newFile != '':
             newFile = input('\nDrop another file or directory here to go again or press enter to quit: ')
-            #newFile = newFile.replace('"','')
-            newFile = findReplace(newFile,'"','',ALL,LEFT,False)[0] # Remove the auto quotes around file paths with spaces.
+            newFile = newFile.replace('"','') # Remove the auto quotes around file paths with spaces.
             images_modified += drop([newFile])
             if images_modified > prev_images_modified:
                 print('\nNumber of all files renamed so far: [ %s ]' % (images_modified))
