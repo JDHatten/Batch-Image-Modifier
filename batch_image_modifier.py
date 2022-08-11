@@ -15,7 +15,7 @@ Requirements:
     python -m pip install -U scikit-image
 
 TODO:
-    [] Upscale or Downscale only options
+    [Done] Upscale or Downscale only options
     [] Extra Options when saving images, i.e. jpeg quality slider, png transparency, etc.
     [] Choose where to save new image files.
     [] 
@@ -24,9 +24,11 @@ TODO:
 
 
 import imghdr
+#import numpy as np
 import matplotlib.pyplot as plt
 import os
 from pathlib import Path, PurePath
+from PIL import Image
 from skimage import io
 from skimage.transform import resize #, downscale_local_mean, rescale
 import sys
@@ -46,7 +48,7 @@ CHANGE_HEIGHT = 0
 CHANGE_WIDTH = 1
 KEEP_ASPECT_RATIO = 2
 CHANGE_IMAGE_FORMAT = 3
-IMAGE_FORMAT_OPTIONS = 4
+IMAGE_FORMAT_PARAMS = 4
 OVERWRITE_IMAGE_FILE = 5
 ADD_TO_FILENAME = 6
 SAVE_FILE_FOLDER = 7
@@ -77,6 +79,7 @@ RAS = '.ras'  # Sun rasters: *.ras, *.sun, *.sr
 TIF = '.tif'  # TIFF files: *.tiff, *.tif
 WEB = '.webp' # WebP: *.webp
 
+# Extra Parameters
 QUALITY = 0
 OPTIMIZE = 1
 PROGRESSIVE = 2
@@ -96,6 +99,7 @@ preset0 = { #           : Defualts
   CHANGE_WIDTH          : (NO_CHANGE),        # 0 = NO_CHANGE
   KEEP_ASPECT_RATIO     : True,               # If Only One Size Changed
   CHANGE_IMAGE_FORMAT   : NO_CHANGE,          # Image Format
+  IMAGE_FORMAT_PARAMS   : None,               # Extra Image Format Parameters
   OVERWRITE_IMAGE_FILE  : False,              # If Not CHANGE_FORMAT
   ADD_TO_FILENAME       : '_new',             # If OVERWRITE False
   SAVE_FILE_FOLDER      : False               # If Directory Dropped
@@ -111,7 +115,7 @@ preset1 = {
 }
 preset2 = {
   CHANGE_HEIGHT         : 0,
-  CHANGE_WIDTH          : (MULTIPLY,4),
+  CHANGE_WIDTH          : (MULTIPLY,2),
   KEEP_ASPECT_RATIO     : True,
   CHANGE_IMAGE_FORMAT   : PNG
 }
@@ -132,7 +136,7 @@ preset5 = {
   CHANGE_WIDTH          : NO_CHANGE,
   KEEP_ASPECT_RATIO     : True,
   CHANGE_IMAGE_FORMAT   : JPG,
-  IMAGE_FORMAT_OPTIONS  : ((QUALITY,100),(OPTIMIZE,True),(PROGRESSIVE,True)),
+  IMAGE_FORMAT_PARAMS   : {QUALITY:100, OPTIMIZE:True, PROGRESSIVE:True},
   OVERWRITE_IMAGE_FILE  : False,
   ADD_TO_FILENAME       : '_[Modified]',
   SAVE_FILE_FOLDER      : SAME_DIR
@@ -252,6 +256,7 @@ def modifyImage(file_path, edit_details):
         image_modified = True
     else:
         extension = image_path.suffix
+    image_format_options = edit_details.get(IMAGE_FORMAT_PARAMS,None)
     overwrite = edit_details.get(OVERWRITE_IMAGE_FILE,False)
     if not overwrite:
         new_file_name = image_path.stem + edit_details.get(ADD_TO_FILENAME,'_new')
@@ -268,9 +273,13 @@ def modifyImage(file_path, edit_details):
         new_image_path = PurePath().joinpath(image_path.parent, new_file_name+extension)
         ## TODO
         if extension == JPG:
-            io.imsave(str(new_image_path), image_resized, quality=100, optimize=True, progressive=True)
+            jpg_quality = image_format_options.get(QUALITY,75)
+            jpg_optimize = image_format_options.get(OPTIMIZE,False)
+            jpg_progressive = image_format_options.get(PROGRESSIVE,False)
+            io.imsave(str(new_image_path), image_resized, quality=jpg_quality, optimize=jpg_optimize, progressive=jpg_progressive)
         else:
             io.imsave(str(new_image_path), image_resized)
+            #plt.savefig(str(new_image_path))
     
     return image_modified
 
@@ -284,7 +293,6 @@ def modifyImageSize(org_image_shape, image_size_modifications, keep_aspect_ratio
     
     # Height
     if type(image_size_modifications[HEIGHT]) is tuple:
-        
         
         if image_size_modifications[HEIGHT][0] == NO_CHANGE:
             new_height = org_image_shape[HEIGHT]
@@ -379,7 +387,6 @@ def modifyImageSize(org_image_shape, image_size_modifications, keep_aspect_ratio
     print('Height: [%s]  --  Width: [%s]' % (new_height, new_width))
     
     return (new_height, new_width)
-
 
 
 ### Change strings into an integers.
@@ -507,27 +514,6 @@ if __name__ == '__main__':
     #sys.argv.append(os.path.join(ROOT_DIR,'images\\01.jpg'))
     #sys.argv.append(os.path.join(ROOT_DIR,'images\\text.txt'))
     #sys.argv.append(os.path.join(ROOT_DIR,'images'))
-    
-    '''from PIL import Image
-    pil_image = Image.open(file_path)
-    print(pil_image)'''
-    
-    '''fig, axes = plt.subplots(nrows=2, ncols=2)
-
-    ax = axes.ravel()
-
-    ax[0].imshow(image_resized, cmap='gray')
-    ax[0].set_title("Resized image (no aliasing)")
-    
-    ax[0].set_xlim(0, 512)
-    ax[0].set_ylim(512, 0)
-    plt.tight_layout()
-    plt.show()'''
-    
-    #plt.imshow(image_resized)
-    #plt.show()
-    
-    #print(io.available_plugins)
     
     
     images_modified = drop(sys.argv[1:])
